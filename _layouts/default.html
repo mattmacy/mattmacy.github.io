@@ -1,16 +1,48 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="always">
     <title>{{ page.title }}</title>
     
     <!-- <link rel="stylesheet" type="text/css" href="/css/main.css"> -->
   <link rel="stylesheet" type="text/css" href="/media/css/bootstrap.css">
   <link rel="stylesheet" type="text/css" href="/media/css/pygments.css">
-    
+   <script type="text/javascript" src="/media/js/jquery.js"></script>
+  <script src="/media/bootstrap/js/bootstrap.js"></script>
+  <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [ ["\\(","\\)"] ],
+          displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+          processEscapes: false,
+          skipTags: ["script","noscript","style","textarea","code"]
+        }
+      });
+  </script>
+  <script type="text/javascript" async
+    src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML">
+  </script>
   </head>
 
 
   <body>
+    <div class="hero-box">
+  <div class="hero-inner">
+    <h1 class="highlight slogan">Smerity (n):</h1>
+    <h2>
+    Saving the world one byte at a time.
+    </h2>
+    <h3 class="white contact-me">
+      <a href="https://www.twitter.com/Mat_Macy/" alt="Twitter"><i class="icon-twitter"></i></a>
+      <a href="https://github.com/mattmacy/" alt="GitHub"><i class="icon-github"></i></a>
+      <a href="https://www.linkedin.com/in/matthew-macy-2493a21" alt="LinkedIn"><i class="icon-linkedin"></i></a>
+      <a href="mailto:mat.macy@gmail.com" alt="Email"><i class="icon-envelope-alt"></i></a>
+    </h3>
+  </div>
+</div>
+<!--
     <nav>
 <ul>
 <li><a href="/">Home</a></li>
@@ -19,6 +51,7 @@
 <li><a href="/blog">Blog</a></li>
 </ul>
     </nav>
+-->
 <div class="container">
 
   {{ content }}
