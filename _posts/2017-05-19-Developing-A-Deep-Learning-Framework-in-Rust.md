@@ -76,7 +76,6 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
     }
     impl <'a>ModIntf<'a> for Net<'a> {
         // forward could be implemented in one of two ways:
-
         // a) as a near verbatim implementation of the python version 
         fn forward(&mut self, args: &[&mut Tensor]) -> [&mut Tensor] {
             let training = self.delegate.training;
@@ -88,10 +87,9 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
             let x = self.fc2(&x);
             log_softmax(&x)
         }
-
-        // b) having all functions be members of an implementation of the Tensor trait
-        //    so that they can implicitly take a tensor and return a tensor in a chained
-        //    method invocation
+        // b) having all functions be members of an implementation of the Tensor
+        //    trait so that they can implicitly take a tensor and return a tensor
+        //    in a chained method invocation
         fn forward(&mut self, args: &[&mut Tensor]) -> [&mut Tensor] {
             let training = self.delegate.training;
             args[0].conv2d(self.conv1).max_pool2d(2).relu(false).
