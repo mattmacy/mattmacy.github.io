@@ -74,8 +74,8 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
         // a) as a near verbatim implementation of the python version 
         fn forward(&mut self, args: &[&mut Tensor]) -> [&mut Tensor] {
             let training = self.delegate.training;
-            let x = relu(F.max_pool2d(self.conv1(&args[0]), 2));
-            let x = relu(F.max_pool2d(dropout2d(self.conv2(&x), training, 0.5), 2));
+            let x = relu(max_pool2d(self.conv1(&args[0]), 2));
+            let x = relu(max_pool2d(dropout2d(self.conv2(&x), training, 0.5), 2));
             let x = x.view(-1, 320);
             let x = relu(self.fc1(&x));
             let x = dropout(&x, training, 0.5)
@@ -146,7 +146,7 @@ One can explicitly create the *Subtype* "is a" *Base* relationship while separat
 
 
 ### Introspection
-When I refer to introspection in Python I'm referring to two features: the abilitity to iterate over fields in an objects and match on type. PyTorch uses these features to populate a dict of parameters and a dict of modules to support apply() methods to allow one to pass a closure that will modify every network layer in the graph. PyTorch uses this for serialization/deserialization, pretty printing, changing training state, changing the primitive type of the tensors in layer parameters, and moving tensors to and from the GPU. In Rust we don't actually need to explicitly implement the first two in Module - we just need to implement the Serialize, Deserialize, and Debug for the structs that can't automatically derive them - namely leaf Parameter Tensors that wrap the native types, and then indicate that new layers should automatically derive those traits. However, we still need to be able to explicitly traverse the graph for the other functions. One can, with a bit of effort, support this functionality using procedural macros and attribute annotations. The "#[ignore]" annotation is an attribute that tells the ModParse derive_macro that that field does not implement the ModIntf trait so that it won't try to store it in a HashMap of ModIntf<'a>s.
+When I refer to introspection in Python I'm referring to two features: the abilitity to iterate over fields in an objects and match on type. PyTorch uses these features to populate a dict of parameters and a dict of modules to support apply() methods to allow one to pass a closure that will modify every network layer in the graph. PyTorch uses this for serialization/deserialization, pretty printing, changing training state, changing the primitive type of the tensors in layer parameters, and moving tensors to and from the GPU. In Rust we don't actually need to explicitly implement the first two in Module - we just need to implement the Serialize, Deserialize, and Debug for the structs that can't automatically derive them - namely leaf Parameter Tensors that wrap the native types, and then indicate that new layers should automatically derive those traits. However, we still need to be able to explicitly traverse the graph for the other functions. One can, with a bit of effort, support this functionality using procedural macros and attribute annotations. The "#[ignore]" annotation is an attribute that tells the ModParse derive_macro that that field does not implement the ModIntf trait so that it won't try to store it in a HashMap of Modules.
 
     pub struct Module<'a> {
         pub _name: &'a str,
@@ -175,7 +175,9 @@ When I refer to introspection in Python I'm referring to two features: the abili
         }
     }
 
-We can now recursively iterate over the children of each layer just as PyTorch does. This requirement is why we have the #[derive(<...>, ModuleParse)] and the #[module] before each field that in PyTorch has inherited from nn.Module.
+We can now recursively iterate over the children of each layer just as PyTorch does. This requirement is why we have the #[derive(<...>, ModuleParse)] and the #[ignore] before each field that is not a Module, Parameter, or implementer of ModIntf.
+
+
 
 ### Optional Named Arguments - aka kwargs
 Rust has no named optional arguments the way that Python, Ocaml, and numerous other languages do. Some on #rust say
