@@ -72,7 +72,7 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
         }
     }
     impl <'a>ModIntf<'a> for Net<'a> {
-        // forward could be implemented in one of two ways:
+        // forward operations could be implemented in one of two ways:
         // a) as a near verbatim implementation of the python version 
         fn forward(&mut self, args: &[&mut Tensor]) -> [&mut Tensor] {
             let training = self.delegate.training;
@@ -84,9 +84,9 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
             let x = self.fc2(&x);
             log_softmax(&x)
         }
-        // b) having all functions be members of an implementation of the Tensor
-        //    trait so that they can implicitly take a tensor and return a tensor
-        //    in a chained method invocation
+        // b) with all having an implementation of the Tensor trait so 
+        // that they can implicitly take a tensor and return a tensor
+        // in a chained method invocation
         fn forward(&mut self, args: &[&mut Tensor]) -> [&mut Tensor] {
             let training = self.delegate.training;
             args[0].conv2d(self.conv1)
@@ -103,18 +103,21 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
                 .linear(self.fc2)
                 .log_softmax()
         }
+        // Method chaining doesn't preclude the use of temporaries
+        // one can lay out the forward function in the same way as
+        // the first example whilst chaining methods.
+        fn forward(&mut self, args: &[&mut Tensor]) -> [&mut Tensor] {
+            let training = self.delegate.training;
+            let x = args[0].conv2d(self.conv1).max_pool2d(2).relu(false);
+            let x = x.conv2d(self.conv2d).dropout2d(training, 0.5).max_pool2d(2).relu(false);
+            let x = x.view(-1, 320);
+            let x = x.linear(self.fc1).relu(false);
+            let x = x.dropout(training, 0.5);
+            let x = x.linear(self.fc2);
+            x.log_softmax()
+        }
         fn delegate(&mut self) -> &mut Module<'a> { &mut self.delegate }
     }
-    
-    // NB: The following two pairs of lines are equivalent:
-    // let x = relu(max_pool2d(dropout2d(self.conv2(&x), training, 0.5), 2), false);
-    // let x = x.view(-1, 320)
-    // 
-    // let x = x.conv2d(self.conv2d).dropout2d(training, 0.5).max_pool2d(2).relu(false)
-    // let x = x.view(-1, 320)
-    //
-    // Method chaining doesn't preclude the use of temporaries, but the calling 
-    // convention does make them optional.
 
 While certainly more verbose than the PyTorch version, I think it actually does a reasonable job of capturing the spirit of the PyTorch API. In descending order of severity, the added complexity and syntax mismatch stem from limits imposed by the following design decisions made by the Rust developers:
 - No compositional inheritance
