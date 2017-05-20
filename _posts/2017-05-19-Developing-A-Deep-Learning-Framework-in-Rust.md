@@ -32,9 +32,9 @@ The simplest example that actually does something interesting is examples/mnist 
 If *data* is a 2d tensor representing a grey scale image and *target* is the correct value and optimizer is one of the available optimizers - SGD, ADAM, RMSprop, etc. - instantiating the model and doing a single training pass is
     
         model = Net()
-        ...
-(eliding a number of critical details for the sake of clarity)
-
+        #...
+        # (eliding a number of critical details for the sake of clarity)
+        #
         output = model(data)
         loss = F.nll_loss(output, target)
         loss.backward()
