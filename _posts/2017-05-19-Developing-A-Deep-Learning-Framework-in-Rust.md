@@ -76,10 +76,10 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
         // a) as a near verbatim implementation of the python version 
         fn forward(&mut self, args: &[&mut Tensor]) -> [&mut Tensor] {
             let training = self.delegate.training;
-            let x = relu(max_pool2d(self.conv1(&args[0]), 2));
+            let x = relu(max_pool2d(self.conv1(&args[0]), 2), false);
             let x = relu(max_pool2d(dropout2d(self.conv2(&x), training, 0.5), 2));
             let x = x.view(-1, 320);
-            let x = relu(self.fc1(&x));
+            let x = relu(self.fc1(&x), false);
             let x = dropout(&x, training, 0.5)
             let x = self.fc2(&x);
             log_softmax(&x)
@@ -92,7 +92,7 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
             args[0].conv2d(self.conv1)
                 .max_pool2d(2)
                 .relu(false)
-                .conv2d()
+                .conv2d(self.conv2d)
                 .dropout2d(training, 0.5)
                 .max_pool2d(2)
                 .relu(false)
@@ -105,7 +105,16 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
         }
         fn delegate(&mut self) -> &mut Module<'a> { &mut self.delegate }
     }
-
+    
+    // NB: The following two pairs of lines are equivalent:
+    // let x = relu(max_pool2d(dropout2d(self.conv2(&x), training, 0.5), 2), false);
+    // let x = x.view(-1, 320)
+    // 
+    // let x = x.conv2d(self.conv2d).dropout2d(training, 0.5).max_pool2d(2).relu(false)
+    // let x = x.view(-1, 320)
+    //
+    // Method chaining doesn't preclude the use of temporaries, but the calling convention
+    // makes them optional.
 
 While certainly more verbose than the PyTorch version, I think it actually does a reasonable job of capturing the spirit of the PyTorch API. In descending order of severity, the added complexity and syntax mismatch stem from limits imposed by the following design decisions made by the Rust developers:
 - No compositional inheritance
