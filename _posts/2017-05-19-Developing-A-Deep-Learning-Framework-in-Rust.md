@@ -122,7 +122,7 @@ As of 1.19 Rust does not support anything resembling compositional inheritance. 
         methodC() {...}
     }
 
-where *Subtype* will automatically embed *Base*, one can call *.methodA()* on an instance of *Subtype*, and all classes subtyping Base will support *.methodB()* - will not work in Rust (without abusing the Deref trait which would give the odd behavior that *Subtype would only return the Base part of Subtype). Nonetheless, in Rust one can achieve a similar effect with the following idiom:
+where *Subtype* will automatically embed *Base*, one can call *.methodA()* on an instance of *Subtype*, and all classes subtyping Base will support *.methodB()* - will not work in Rust (without abusing the Deref trait which would give the odd behavior that *\*Subtype* would only return the *Base* part of *Subtype*). Nonetheless, in Rust one can achieve a similar effect with the following idiom:
 
     struct Base {
         fieldA : atype,
