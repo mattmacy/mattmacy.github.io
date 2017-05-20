@@ -57,6 +57,7 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
         fc1: Linear,
         fc2: Linear,
     }
+    
     impl Net<'a> {
         pub fn new() -> Net<'a> {
             let t = Net {
@@ -71,9 +72,13 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
             t 
         }
     }
+    // The forward operations could take on one of two implementations.
+    // The first supporting a near verbatim version of the python 
+    // implementation, and the second supporting a slightly more 
+    // idiomatic to Rust method chaining.
+    
+    // a) as a near verbatim implementation of the python version 
     impl <'a>ModIntf<'a> for Net<'a> {
-        // forward operations could be implemented in one of two ways:
-        // a) as a near verbatim implementation of the python version 
         fn forward(&mut self, args: &[&mut Tensor]) -> [&mut Tensor] {
             let training = self.delegate.training;
             let x = relu(max_pool2d(self.conv1(&args[0]), 2), false);
@@ -84,9 +89,11 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
             let x = self.fc2(&x);
             [log_softmax(&x)]
         }
-        // b) with all having an implementation of the Tensor trait so 
-        // that they can implicitly take a [&mut Tensor] and return a 
-        // [&mut Tensor] in a chained method invocation
+     }
+    // b) by having all have an implementation of the Tensor trait 
+    //    so that they can implicitly take a [&mut Tensor] and return 
+    //    a [&mut Tensor] in a chained method invocation
+    impl <'a>ModIntf<'a> for Net<'a> {
         fn forward(&mut self, args: &[&mut Tensor]) -> [&mut Tensor] {
             let training = self.delegate.training;
             args.conv2d(self.conv1)
@@ -103,9 +110,11 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
                 .linear(self.fc2)
                 .log_softmax()
         }
-        // Method chaining doesn't preclude the use of temporaries.
-        // One can lay out the forward function in the same way as
-        // the first example whilst chaining methods.
+    }    
+    // NB: Method chaining doesn't preclude the use of temporaries.
+    // One can lay out the forward function in the same way as
+    // the first example whilst chaining methods.
+    impl <'a>ModIntf<'a> for Net<'a> {
         fn forward(&mut self, args: &[&mut Tensor]) -> [&mut Tensor] {
             let training = self.delegate.training;
             let x = args.conv2d(self.conv1).max_pool2d(2).relu(false);
@@ -116,7 +125,6 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
             let x = x.linear(self.fc2);
             x.log_softmax()
         }
-        fn delegate(&mut self) -> &mut Module<'a> { &mut self.delegate }
     }
 
 While certainly more verbose than the PyTorch version, I think it actually does a reasonable job of capturing the spirit of the PyTorch API. In descending order of severity, the added complexity and syntax mismatch stem from limits imposed by the following design decisions made by the Rust developers:
