@@ -77,7 +77,7 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
         fn forward(&mut self, args: &[&mut Tensor]) -> [&mut Tensor] {
             let training = self.delegate.training;
             let x = relu(max_pool2d(self.conv1(&args[0]), 2), false);
-            let x = relu(max_pool2d(dropout2d(self.conv2(&x), training, 0.5), 2));
+            let x = relu(max_pool2d(dropout2d(self.conv2(&x), training, 0.5), 2), false);
             let x = x.view(-1, 320);
             let x = relu(self.fc1(&x), false);
             let x = dropout(&x, training, 0.5);
