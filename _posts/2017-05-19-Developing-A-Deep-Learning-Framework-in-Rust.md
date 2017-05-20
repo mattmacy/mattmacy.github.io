@@ -49,8 +49,9 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
     use torchrs::functional::{max_pool2d, relu, conv2d, dropout(), dropout2d, linear, log_softmax}
     #[derive(Serialize, Deserialize, Debug, ModuleParse)]
     struct Net<'a> {
-        #[ignore]
         delegate: Module<'a>,
+        #[ignore]
+        foo: i32, // for example purposes only
         conv1: Conv2d,
         conv2: Conv2d,
         fc1: Linear,
@@ -60,6 +61,7 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
         pub fn new() -> Net<'a> {
             let t = Net {
             delegate: Module::new(),
+            foo: -5,
             conv1: Conv2d::build(1, 10).kernel_size(5).done(),
             conv2: Conv2d::build(10, 20).kernel_size(5).done(),
             fc1: Linear::build(320, 50).done(),
