@@ -103,8 +103,8 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
                 .linear(self.fc2)
                 .log_softmax()
         }
-        // Method chaining doesn't preclude the use of temporaries
-        // one can lay out the forward function in the same way as
+        // Method chaining doesn't preclude the use of temporaries.
+        // One can lay out the forward function in the same way as
         // the first example whilst chaining methods.
         fn forward(&mut self, args: &[&mut Tensor]) -> [&mut Tensor] {
             let training = self.delegate.training;
