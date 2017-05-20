@@ -80,16 +80,16 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
             let x = relu(max_pool2d(dropout2d(self.conv2(&x), training, 0.5), 2));
             let x = x.view(-1, 320);
             let x = relu(self.fc1(&x), false);
-            let x = dropout(&x, training, 0.5)
+            let x = dropout(&x, training, 0.5);
             let x = self.fc2(&x);
-            log_softmax(&x)
+            [log_softmax(&x)]
         }
         // b) with all having an implementation of the Tensor trait so 
         // that they can implicitly take a tensor and return a tensor
         // in a chained method invocation
         fn forward(&mut self, args: &[&mut Tensor]) -> [&mut Tensor] {
             let training = self.delegate.training;
-            args[0].conv2d(self.conv1)
+            [args[0].conv2d(self.conv1)
                 .max_pool2d(2)
                 .relu(false)
                 .conv2d(self.conv2d)
@@ -101,7 +101,7 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
                 .relu(false)
                 .dropout(training, 0.5)
                 .linear(self.fc2)
-                .log_softmax()
+                .log_softmax()]
         }
         // Method chaining doesn't preclude the use of temporaries.
         // One can lay out the forward function in the same way as
@@ -114,7 +114,7 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
             let x = x.linear(self.fc1).relu(false);
             let x = x.dropout(training, 0.5);
             let x = x.linear(self.fc2);
-            x.log_softmax()
+            [x.log_softmax()]
         }
         fn delegate(&mut self) -> &mut Module<'a> { &mut self.delegate }
     }
