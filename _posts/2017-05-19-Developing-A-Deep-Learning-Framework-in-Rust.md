@@ -126,7 +126,7 @@ While certainly more verbose than the PyTorch version, I think it actually does 
 - Only one mutable reference allowed at a time
 - Overloading indexing operator '[]' only allows one argument
 
-### Compositional Inheritance
+### No Compositional Inheritance
 As of 1.19 Rust does not support anything resembling compositional inheritance. This means that the familiar pattern:
 
     Base {
@@ -168,7 +168,7 @@ where *Subtype* will automatically embed *Base*, one can call *.methodA()* on an
 One can explicitly create the *Subtype* "is a" *Base* relationship while separately defining the common set of interfaces that classes inheriting from Base should support and thus support the semantics that OO languages support more automatically. This is why the torch.rs version of MNIST embeds a module and implements a *delegate()* method.
 
 
-### Introspection
+### No Introspection
 When I refer to introspection in Python I'm referring to two features: the abilitity to iterate over fields in an objects and match on type. PyTorch uses these features to populate a dict of parameters and a dict of modules to support apply() methods to allow one to pass a closure that will modify every network layer in the graph. PyTorch uses this for serialization/deserialization, pretty printing, changing training state, changing the primitive type of the tensors in layer parameters, and moving tensors to and from the GPU. In Rust we don't actually need to explicitly implement the first two in Module - we just need to implement the Serialize, Deserialize, and Debug for the structs that can't automatically derive them - namely leaf Parameter Tensors that wrap the native types, and then indicate that new layers should automatically derive those traits. However, we still need to be able to explicitly traverse the graph for the other functions. One can, with a bit of effort, support this functionality using procedural macros and attribute annotations. 
 
     // relevant context
@@ -204,9 +204,9 @@ We can now recursively iterate over the children of each layer just as PyTorch d
 
 
 
-### Optional Named Arguments - aka kwargs
+### No Optional Named Arguments - aka kwargs
 Rust has no named optional arguments the way that Python, Ocaml, and numerous other languages do. Some on #rust say
-that it would be desirable to have this but there is no consensus on the "right" way to support this. However, there
+that it would be desirable to have this, but there is no consensus on the "right" way to support this. However, there
 is the [builder pattern](https://aturon.github.io/ownership/builders.html) that we see used for the convolutional and 
 fully connected layers.
 
@@ -236,7 +236,7 @@ By design Rust limits the user to one mutable reference at a time if one is not 
     }
 
 ### Overloading the index operator
-The MNIST example doesn't show any direct use of Tensors, but in PyTorch one can define a 5d tensor and index in to it as you would a 5d array in C. Python can look at an arbitrary number of '[]' and pass those in as arguments to the indexing function in native code. In Rust, the Index and IndexMut traits are limited to a single '[]'. This means that indexing in to a 5d tensor can only be done with a single 5 element array: *data[[1, 2, 3, 4, 5]].
+The MNIST example doesn't show any direct use of Tensors, but in PyTorch one can define a 5d tensor and index in to it as you would a 5d array in C. Python can look at an arbitrary number of '[]' and pass those in as arguments to the indexing function in native code. In Rust, the Index and IndexMut traits are limited to a single '[]'. This means that indexing in to a 5d tensor can only be done with a single 5 element array: *data*[[1, 2, 3, 4, 5]] rather than the more familiar *data*[1][2][3][4][5].
 
 ### Conclusion
 This is just a quick overview of the issues that I have encountered so far. The next step is getting autograd (backpropagation support) working in one form or another. Although complex, the actual amount of code in the autograd implementation is quite small. The bulk of the sources are dedicated to interfacing with Python. This leads me to believe that rather than writing a rust wrapper for the C++ autograd code it would make more sense to simply port it to Rust. What that entails is a matter for a later post.
