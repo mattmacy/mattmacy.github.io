@@ -148,8 +148,9 @@ One can explicitly create the *Subtype* "is a" *Base* relationship while separat
 
 
 ### Introspection
-When I refer to introspection in Python I'm referring to two features: the abilitity to iterate over fields in an objects and match on type. PyTorch uses these features to populate a dict of parameters and a dict of modules to support apply() methods to allow one to pass a closure that will modify every network layer in the graph. PyTorch uses this for serialization/deserialization, pretty printing, changing training state, changing the primitive type of the tensors in layer parameters, and moving tensors to and from the GPU. In Rust we don't actually need to explicitly implement the first two in Module - we just need to implement the Serialize, Deserialize, and Debug for the structs that can't automatically derive them - namely leaf Parameter Tensors that wrap the native types, and then indicate that new layers should automatically derive those traits. However, we still need to be able to explicitly traverse the graph for the other functions. One can, with a bit of effort, support this functionality using procedural macros and attribute annotations. The "#[ignore]" annotation is an attribute that tells the ModParse derive_macro that that field does not implement the ModIntf trait so that it won't try to store it in a HashMap of Modules.
+When I refer to introspection in Python I'm referring to two features: the abilitity to iterate over fields in an objects and match on type. PyTorch uses these features to populate a dict of parameters and a dict of modules to support apply() methods to allow one to pass a closure that will modify every network layer in the graph. PyTorch uses this for serialization/deserialization, pretty printing, changing training state, changing the primitive type of the tensors in layer parameters, and moving tensors to and from the GPU. In Rust we don't actually need to explicitly implement the first two in Module - we just need to implement the Serialize, Deserialize, and Debug for the structs that can't automatically derive them - namely leaf Parameter Tensors that wrap the native types, and then indicate that new layers should automatically derive those traits. However, we still need to be able to explicitly traverse the graph for the other functions. One can, with a bit of effort, support this functionality using procedural macros and attribute annotations. 
 
+    // relevant context
     pub struct Module<'a> {
         pub _name: &'a str,
         <...>
@@ -166,6 +167,7 @@ When I refer to introspection in Python I'm referring to two features: the abili
         <...>
     }
     
+    // auto-generated code:
     impl ModuleStruct for Net {
         fn init_module(&mut self) {
             self.delegate._name = "Net";
@@ -177,7 +179,7 @@ When I refer to introspection in Python I'm referring to two features: the abili
         }
     }
 
-We can now recursively iterate over the children of each layer just as PyTorch does. This requirement is why we have the #[derive(<...>, ModuleParse)] and the #[ignore] before each field that is not a Module, Parameter, or implementer of ModIntf.
+We can now recursively iterate over the children of each layer just as PyTorch does. This requirement is why we have the #[derive(<...>, ModuleParse)] and the #[ignore] before each field that is not a Module, Parameter, or implementer of ModIntf. The macro only has access to the AST, so it can match on the type name (Module or Parameter) but not based on whether or not a type implements a trait. Thus, for the sake of ease of use we assume that anything we don't know about implements ModIntf unless told otherwise.
 
 
 
