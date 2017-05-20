@@ -113,8 +113,8 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
     // let x = x.conv2d(self.conv2d).dropout2d(training, 0.5).max_pool2d(2).relu(false)
     // let x = x.view(-1, 320)
     //
-    // Method chaining doesn't preclude the use of temporaries, but the calling convention
-    // makes them optional.
+    // Method chaining doesn't preclude the use of temporaries, but the calling 
+    // convention does make them optional.
 
 While certainly more verbose than the PyTorch version, I think it actually does a reasonable job of capturing the spirit of the PyTorch API. In descending order of severity, the added complexity and syntax mismatch stem from limits imposed by the following design decisions made by the Rust developers:
 - No compositional inheritance
