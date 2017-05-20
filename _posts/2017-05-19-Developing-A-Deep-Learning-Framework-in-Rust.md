@@ -89,10 +89,19 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
         //    in a chained method invocation
         fn forward(&mut self, args: &[&mut Tensor]) -> [&mut Tensor] {
             let training = self.delegate.training;
-            args[0].conv2d(self.conv1).max_pool2d(2).relu(false).
-            conv2d().dropout2d(training, 0.5).max_pool2d(2).relu(false).
-            view(-1, 320).linear(self.fc1).relu(false).dropout(training, 0.5).
-            linear(self.fc2).log_softmax()
+            args[0].conv2d(self.conv1).
+            max_pool2d(2).
+            relu(false).
+            conv2d().
+            dropout2d(training, 0.5).
+            max_pool2d(2).
+            relu(false).
+            view(-1, 320).
+            linear(self.fc1).
+            relu(false).
+            dropout(training, 0.5).
+            linear(self.fc2).
+            log_softmax()
         }
         fn delegate(&mut self) -> &mut Module<'a> { &mut self.delegate }
     }
