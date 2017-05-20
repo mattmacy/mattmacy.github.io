@@ -179,7 +179,7 @@ When I refer to introspection in Python I'm referring to two features: the abili
         }
     }
 
-We can now recursively iterate over the children of each layer just as PyTorch does. This requirement is why we have the #[derive(<...>, ModuleParse)] and the #[ignore] before each field that is not a Module, Parameter, or implementer of ModIntf. The macro only has access to the AST, so it can match on the type name (Module or Parameter) but not based on whether or not a type implements a trait. Thus, for the sake of ease of use we assume that anything we don't know about implements ModIntf unless told otherwise.
+We can now recursively iterate over the children of each layer just as PyTorch does. This requirement is why we have the #[derive(<...>, ModuleParse)] and the #[ignore] before each field that is not a Module, Parameter, or implementer of ModIntf. The macro only has access to the AST, so it can match on the type name (Module or Parameter) but not based on whether or not a type implements a trait. For the sake of ease of use we assume that anything we don't know about implements ModIntf unless told otherwise.
 
 
 
