@@ -44,11 +44,6 @@ Calling model calls forward(data) followed by any registered forward and backwar
 
 Although Python is a great language for exploration of ideas there are environments for which it is not a good fit. The ones that come first to mind are embedded and linked against native applications in a server environment. Facebook, the primary sponsor of PyTorch, uses Caffe2 (a single rather large C++ binary) for production within its Applied Machine Learning group. Although this is certainly a pragmatic choice, I would like to have something lighter weight with the flexibility of PyTorch. To this end I've started developing Rust bindings for the Torch C libraries with an aim to providing an API as close to the one provided by PyTorch as Rust will permit. I've chosen the logical and yet whimsical name torch.rs (torturous) for this DL framework. As a systems language that aims to have performance equivalent to C Rust is a much less compliant language than python so the framework does face the very real risk of being a dancing bear.
 
-pub trait Conv2dIntf<'a> : Tensor<'a> {
-    fn conv2d(&mut self, state: Conv2d) -> Tensor {
-       state(self as Tensor)
-    }
-}
 Based on the syntactic issues I've resolved far, an implementation of the Net class in the MNIST example shown above in torch.rs should look something like:
 
     use torchrs::functional::{max_pool2d, relu, conv2d, dropout(), dropout2d, linear, log_softmax}
