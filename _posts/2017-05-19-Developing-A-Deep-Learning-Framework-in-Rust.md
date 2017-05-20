@@ -42,61 +42,68 @@ If *data* is a 2d tensor representing a grey scale image and *target* is the cor
         
 Calling model calls forward(data) followed by any registered forward and backward hooks. Inheriting from nn.Module let Net automatically construct a graph used for bookkeeping purposes: setting training state, tensor primitive type, location of tensor (CPU/GPU), serialization/deserialization, and pretty printing.
 
-Although Python is a great language for exploration of ideas there are environments for which it is not a good fit. The ones that come first to mind are embedded and linked against native applications in a server environment. Facebook, the primary sponsor of PyTorch, uses Caffe2 (a single rather large C++ binary) for production within its Applied Machine Learning group. Although this is certainly a pragmatic choice, I would like to have something lighter weight with the flexibility of PyTorch. To this end I've started developing Rust bindings for the Torch C libraries with an aim to providing an API as close to the one provided by PyTorch as Rust will permit. I've chosen the logical and yet whimsical name torch.rs (torturous) for this
-DL framework. As a systems language that aims to have performance equivalent to C Rust is a much less compliant language than python so the framework does face the very real risk of being a dancing bear.
+Although Python is a great language for exploration of ideas there are environments for which it is not a good fit. The ones that come first to mind are embedded and linked against native applications in a server environment. Facebook, the primary sponsor of PyTorch, uses Caffe2 (a single rather large C++ binary) for production within its Applied Machine Learning group. Although this is certainly a pragmatic choice, I would like to have something lighter weight with the flexibility of PyTorch. To this end I've started developing Rust bindings for the Torch C libraries with an aim to providing an API as close to the one provided by PyTorch as Rust will permit. I've chosen the logical and yet whimsical name torch.rs (torturous) for this DL framework. As a systems language that aims to have performance equivalent to C Rust is a much less compliant language than python so the framework does face the very real risk of being a dancing bear.
 
-
+pub trait Conv2dIntf<'a> : Tensor<'a> {
+    fn conv2d(&mut self, state: Conv2d) -> Tensor {
+       state(self as Tensor)
+    }
+}
 Based on the syntactic issues I've resolved far, an implementation of the Net class in the MNIST example shown above in torch.rs should look something like:
 
+    use torchrs::functional::{max_pool2d, relu, conv2d, dropout(), dropout2d, linear, log_softmax}
     #[derive(Serialize, Deserialize, Debug, ModuleParse)]
     struct Net<'a> {
+        #[ignore]
         delegate: Module<'a>,
-        #[module]
         conv1: Conv2d,
-        #[module]
         conv2: Conv2d,
-        #[module]
-        conv2_drop: Dropout2d,
-        #[module]
         fc1: Linear,
-        #[module]
         fc2: Linear,
     }
     impl Net<'a> {
         pub fn new() -> Net<'a> {
             let t = Net {
             delegate: Module::new(),
-            conv1: Conv2d::new(Conv2dArgs {
-                                in_channels: 1,
-                                out_channels: 10,
-                                kernel_size: 5, ...}),
-            conv2: Conv2d::new(Conv2dArgs {
-                                in_channels: 10,
-                                out_channels: 20,
-                                kernel_size: 5, ...}),
-            conv2_drop: Dropout2d::new(0.5),
-            fc1: Linear::new(320, 50, true),
-            fc2: Linear::new(50, 10, true),
+            conv1: Conv2d::build(1, 10).kernel_size(5).done(),
+            conv2: Conv2d::build(10, 20).kernel_size(5).done(),
+            fc1: Linear::build(320, 50).done(),
+            fc2: Linear::build(50, 10).done(),
             };
             t.init_module();
             t 
         }
     }
     impl <'a>ModIntf<'a> for Net<'a> {
+        // forward could be implemented in one of two ways:
+
+        // a) as a near verbatim implementation of the python version 
         fn forward(&mut self, args: &[&mut Tensor]) -> [&mut Tensor] {
-            let x = F.relu(F.max_pool2d(self.conv1(&args[0]), 2));
-            let x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(&x)), 2)));
+            let training = self.delegate.training;
+            let x = relu(F.max_pool2d(self.conv1(&args[0]), 2));
+            let x = relu(F.max_pool2d(dropout2d(self.conv2(&x), training, 0.5), 2));
             let x = x.view(-1, 320);
-            let x = F.relu(self.fc1(x));
-            let x = F.dropout(x, self.delegate.training, 0.5)
-            let x = self.fc2(x);
-            F.log_softmax(x)
+            let x = relu(self.fc1(&x));
+            let x = dropout(&x, training, 0.5)
+            let x = self.fc2(&x);
+            log_softmax(&x)
+        }
+
+        // b) having all functions be members of an implementation of the Tensor trait
+        //    so that they can implicitly take a tensor and return a tensor in a chained
+        //    method invocation
+        fn forward(&mut self, args: &[&mut Tensor]) -> [&mut Tensor] {
+            let training = self.delegate.training;
+            args[0].conv2d(self.conv1).max_pool2d(2).relu(false).
+            conv2d().dropout2d(training, 0.5).max_pool2d(2).relu(false).
+            view(-1, 320).linear(self.fc1).relu(false).dropout(training, 0.5).
+            linear(self.fc2).log_softmax()
         }
         fn delegate(&mut self) -> &mut Module<'a> { &mut self.delegate }
     }
 
 
-While certainly more verbose than the PyTorch version, I think it actually does a reasonable job of capturing the spirit of the PyTorch API. In descending order of severity, the added complexity and syntax mismatch stem from the following missing features from and design limits of Rust:
+While certainly more verbose than the PyTorch version, I think it actually does a reasonable job of capturing the spirit of the PyTorch API. In descending order of severity, the added complexity and syntax mismatch stem from the following design differences in Rust:
 - No compositional inheritance
 - No introspection
 - No optional named arguments (kwargs)
@@ -117,7 +124,7 @@ As of 1.19 Rust does not support anything resembling compositional inheritance. 
         methodC() {...}
     }
 
-where *Subtype* will automatically embed *Base*, one can call *.methodA()* on an instance of *Subtype*, and all classes subtyping Base will support *.methodB()* - will not work in Rust. In Rust one can achieve a similar effect with the following idiom:
+where *Subtype* will automatically embed *Base*, one can call *.methodA()* on an instance of *Subtype*, and all classes subtyping Base will support *.methodB()* - will not work in Rust (without abusing the Deref trait which would give the odd behavior that *Subtype would only return the Base part of Subtype). Nonetheless, in Rust one can achieve a similar effect with the following idiom:
 
     struct Base {
         fieldA : atype,
@@ -146,7 +153,7 @@ One can explicitly create the *Subtype* "is a" *Base* relationship while separat
 
 
 ### Introspection
-When I refer to introspection in Python I'm referring to two features: the abilitity to iterate over fields in an objects and match on type. PyTorch uses these features to populate a dict of parameters and a dict of modules to support apply() methods to allow one to pass a closure that will modify every network layer in the graph. PyTorch uses this for serialization/deserialization, pretty printing, changing training state, changing the primitive type of the tensors in layer parameters, and moving tensors to and from the GPU. In Rust we don't actually need to explicitly implement the first two in Module - we just need to implement the Serialize, Deserialize, and Debug for the structs that can't automatically derive them - namely leaf Parameter Tensors that wrap the native types, and then indicate that new layers should automatically derive those traits. However, we still need to be able to explicitly traverse the graph for the other functions. One can, with a bit of effort, support this functionality using procedural macros and attribute annotations. The "#[module]" annotation is an attribute that tells the ModParse derive_macro that the field implements the ModIntf trait so that it can be stored in a HashMap of ModIntf<'a>s.
+When I refer to introspection in Python I'm referring to two features: the abilitity to iterate over fields in an objects and match on type. PyTorch uses these features to populate a dict of parameters and a dict of modules to support apply() methods to allow one to pass a closure that will modify every network layer in the graph. PyTorch uses this for serialization/deserialization, pretty printing, changing training state, changing the primitive type of the tensors in layer parameters, and moving tensors to and from the GPU. In Rust we don't actually need to explicitly implement the first two in Module - we just need to implement the Serialize, Deserialize, and Debug for the structs that can't automatically derive them - namely leaf Parameter Tensors that wrap the native types, and then indicate that new layers should automatically derive those traits. However, we still need to be able to explicitly traverse the graph for the other functions. One can, with a bit of effort, support this functionality using procedural macros and attribute annotations. The "#[ignore]" annotation is an attribute that tells the ModParse derive_macro that that field does not implement the ModIntf trait so that it won't try to store it in a HashMap of ModIntf<'a>s.
 
     pub struct Module<'a> {
         pub _name: &'a str,
@@ -178,37 +185,14 @@ When I refer to introspection in Python I'm referring to two features: the abili
 We can now recursively iterate over the children of each layer just as PyTorch does. This requirement is why we have the #[derive(<...>, ModuleParse)] and the #[module] before each field that in PyTorch has inherited from nn.Module.
 
 ### Optional Named Arguments - aka kwargs
-Rust has no named optional arguments the way that Python, Ocaml, and numerous other languages do. The Rust community admits that it would be desirable to have this but there is no consensus on the "right" way to support this. For functions that take a very large number of arguments there is an intermediate solution to this. For a function Foo we can define a FooArgs that is mostly initialized automotically.
+Rust has no named optional arguments the way that Python, Ocaml, and numerous other languages do. Some on #rust say
+that it would be desirable to have this but there is no consensus on the "right" way to support this. However, there
+is the [builder pattern](https://aturon.github.io/ownership/builders.html) that we see used for the convolutional and 
+fully connected layers.
 
-    fn Foo(args: FooArgs) {<...>}
-        
-    struct FooArgs {
-        field0: i32,
-        field1: u32,
-        <...>
-        fieldN: Bar,    
-    }
-    
-    impl Default for FooArgs {
-        fn default() -> Self {
-            FooArgs {
-                field0: -1,
-                field1: 2,
-                <...>
-                fieldN: Bar::new(),
-            }
-        }    
-    }
-    
-    pub fn main() {
-        Foo( FooArgs {field1: 30, ... } );
-        <...>
-    } 
-        
-The ellipses indicate that the remaining fields should be initialized with their default values. For functions with only one or two optional fields it's probably still more succinct to simply require the caller to pass the default value - as was the case of the argument to Dropout2d and the third argument to Linear().
 
 ### Rust insists that mutable references be unique
-The memory management and memory safety guarantees in Rust can only be automically enforced by rustc's borrow checker by restricting code to the use of one mutable reference at a time. This meant that the naive initial implementation of directly storing references to the individual fields would not actually compile and we need to resort to unsafe code to achieve this. This is why we coerce the module to a *\*mut* with its *as_mut_ptr* method. In order to hide this from client code we implement a custom iterator that functions as a wrapper to map the *\*mut* back to *&mut*.
+By design Rust limits the user to one mutable reference at a time if one is not using additional protections. This meant that the naive initial implementation of directly storing references to the individual fields would not actually compile. We need to either resort to unsafe code to achieve this or implement the iterator by storing just the names of fields and generating a separate function with a match statement to return a field given a string. This is why we coerce the module to a *\*mut* with its *as_mut_ptr* method. In order to hide this from client code we implement a custom iterator that functions as a wrapper to map the *\*mut* back to *&mut*.
 
     pub struct PtrIterMut<'a, T: 'a> {
         mod_iter: hash_map::IterMut<'a, &'a str, *mut T>,
