@@ -98,7 +98,7 @@ Based on the syntactic issues I've resolved far, an implementation of the Net cl
     }
 
 
-While certainly more verbose than the PyTorch version, I think it actually does a reasonable job of capturing the spirit of the PyTorch API. In descending order of severity, the added complexity and syntax mismatch stem from the following design differences in Rust:
+While certainly more verbose than the PyTorch version, I think it actually does a reasonable job of capturing the spirit of the PyTorch API. In descending order of severity, the added complexity and syntax mismatch stem from limits imposed by a number of design decisions made by the Rust developers:
 - No compositional inheritance
 - No introspection
 - No optional named arguments (kwargs)
