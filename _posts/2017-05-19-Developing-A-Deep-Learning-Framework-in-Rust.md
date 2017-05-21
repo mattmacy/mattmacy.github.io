@@ -210,6 +210,7 @@ When I refer to introspection in Python I'm referring to two features: the abili
 
 We can now recursively iterate over the children of each layer just as PyTorch does. This requirement is why we have the #[derive(<...>, ModuleParse)] and the #[ignore] before each field that is not a Module, Parameter, or implementer of ModIntf. The macro only has access to the AST, so it can match on the type name (Module or Parameter) but not based on whether or not a type implements a trait. For the sake of ease of use we assume that anything we don't know about implements ModIntf unless told otherwise.
 
+** UPDATE: ** The RTTI aspect could be done more cleanly using [specialization](https://github.com/rust-lang/rfcs/blob/master/text/1210-impl-specialization.md) as shown by the following [example](https://is.gd/cK6fgR). However, it is only available in the 'nightly' (read development) version of rustc and is currently blocked on the [trait system rewrite](https://github.com/rust-lang/rust/issues/31844#issuecomment-296849227).
 
 
 ### No Optional Named Arguments - aka kwargs
