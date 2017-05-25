@@ -7,7 +7,7 @@ date: 2017-05-19
 There are numerous deep learning frameworks available. Judging by the number of stars on github 
 and the amount of attention that Google has given it, the most well known is probably Google's 
 TensorFlow. For most applications, which framework is 'best' ultimately boils down to taste and
-implementation details for the specific model one is developing. Of the handful that I've tried, the first framework that I've actually *enjoyed* using is PyTorch.
+implementation details for the specific model one is developing. Of the handful that I've tried, the first framework that I've actually *enjoyed* using is PyTorch. My [V-Net reimplementation](https://mattmacy.io/vnet.pytorch), my first real use of PyTorch, was remarkably straightforward.
 
 The simplest example that actually does something interesting is examples/mnist from pytorch/examples - classifying handwritten digits using a convolutional neural network (CNN):
 
@@ -46,7 +46,7 @@ Although Python is a great language for exploration of ideas there are environme
 
 Based on the syntactic issues I've resolved far, an implementation of the Net class in the MNIST example shown above in torch.rs should look something like:
 
-    use torchrs::functional::{max_pool2d, relu, conv2d, dropout(), dropout2d, linear, log_softmax}
+    use torchrs::functional::{max_pool2d, relu, conv2d, dropout, dropout2d, linear, log_softmax}
     #[derive(Serialize, Deserialize, Debug, ModuleParse)]
     struct Net<'a> {
         delegate: Module<'a>,
